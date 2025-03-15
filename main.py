@@ -1,11 +1,10 @@
 from flask import Flask
 
 from src.presentation.book_api import BookApi
-from src.presentation.member_api import MemberApi
 from src.presentation.borrow_api import BorrowAPI
-from src.presentation.return_api import ReturnAPI
-
 from src.presentation.error_handler import register_error_handlers
+from src.presentation.member_api import MemberApi
+from src.presentation.return_api import ReturnAPI
 
 app = Flask("__name__")
 

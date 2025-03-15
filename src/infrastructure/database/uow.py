@@ -1,37 +1,43 @@
-from typing import Optional, Type
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
 from types import TracebackType
-from src.infrastructure.database.db import engine  
+from typing import Optional, Type
+
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session, sessionmaker
+
+from src.infrastructure.database.db import engine
+
 
 class UnitOfWork:
     def __init__(self) -> None:
-        self.session = sessionmaker(bind=engine)()  
+        self.session = sessionmaker(bind=engine)()
 
     def __enter__(self) -> 'UnitOfWork':
-        self.start()  
+        self.start()
         return self
 
-    def __exit__(self, exc_type: Optional[Type[BaseException]],
-                 exc_value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
-        if exc_type is None:  
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        if exc_type is None:
             self.commit()
-        else: 
+        else:
             self.rollback()
 
     def start(self) -> None:
-        self.session.begin() 
+        self.session.begin()
 
     def commit(self) -> None:
         try:
-            self.session.commit() 
+            self.session.commit()
         except SQLAlchemyError as e:
-            self.session.rollback() 
-            raise e 
+            self.session.rollback()
+            raise e
 
     def rollback(self) -> None:
-        self.session.rollback()  
+        self.session.rollback()
 
     def get_session(self) -> Session:
-        return self.session  
+        return self.session

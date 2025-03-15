@@ -1,8 +1,10 @@
-from sqlalchemy import Column, Integer, String, Table , Boolean , DateTime , ForeignKey
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table
 
 from src.infrastructure.database.db import engine, metadata
 
-books = Table('books', metadata,
+books = Table(
+    'books',
+    metadata,
     Column('book_id', Integer, primary_key=True,),
     Column('title', String, nullable=False),
     Column('author', String, nullable=False),
@@ -10,9 +12,10 @@ books = Table('books', metadata,
     Column('borrowed_date', DateTime, default=None),
     Column('borrowed_by', Integer, ForeignKey('members.member_id'), nullable=True)
 )
-# UUID NOT INTERER
 
-members = Table('members', metadata,
+members = Table(
+    'members',
+    metadata,
     Column('member_id', Integer, primary_key=True),
     Column('name', String, nullable=False),
     Column('email', String, nullable=False, unique=True)

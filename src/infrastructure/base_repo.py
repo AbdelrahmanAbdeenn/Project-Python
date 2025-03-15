@@ -1,9 +1,12 @@
-from typing import Any, TypeVar, Generic, Type, List
-from src.domain.entities import BaseEntity
+from typing import Any, Generic, List, Type, TypeVar
+
 from sqlalchemy import Table, delete, insert, select, update
 from sqlalchemy.orm import Session
 
+from src.domain.base_entity import BaseEntity
+
 E = TypeVar('E', bound='BaseEntity')
+
 
 class BaseRepo(Generic[E]):
     def __init__(self, entity_type: Type[E], table: Table, primary_key_column: str) -> None:
@@ -46,10 +49,10 @@ class BaseRepo(Generic[E]):
         result = session.execute(statement)
         return result.rowcount > 0
 
-    def _map_row_to_entity(self, row) -> E:
+    def _map_row_to_entity(self, row: Any) -> E:
         row_dict = dict(row._mapping)
         primary_key_column = self.primary_key_column
         if "id" in row_dict:
-            row_dict[primary_key_column] = row_dict.pop("id")  # Ensure correct PK name
+            row_dict[primary_key_column] = row_dict.pop("id")
         entity = self.entity_type(**row_dict)
         return entity
