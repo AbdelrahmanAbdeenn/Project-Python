@@ -1,13 +1,12 @@
-from typing import Any, Generic, List, TypeVar, Union
+from typing import Any, Generic, TypeVar
 
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy import Connection
 
 from src.domain.base_entity import BaseEntity
-from src.infrastructure.base_repo import BaseRepo
 from src.infrastructure.database.uow import UnitOfWork
+from src.infrastructure.repositories.base_repo import BaseRepo
 
-E = TypeVar('E', bound=BaseEntity)
+E = TypeVar("E", bound=BaseEntity)
 
 
 class BaseServices(Generic[E]):
@@ -15,53 +14,41 @@ class BaseServices(Generic[E]):
         self.repo = repo
         self.uow = uow
 
-    def get(self, id: Union[int, None]) -> Union[List[E], E]:
+    def get(self, id: int | None | str) -> list[E] | E:
         with self.uow:
-            session = self.uow.get_session()
             if id is None:
-                return self.repo.get_all(session)  # Returns List[E]
-            else:
-                return self._get_entity(id, session)  # Returns E
+                return self.repo.get_all(self.uow.connection)
+
+            return self._get_entity(id, self.uow.connection)
 
     def create(self, data: dict[str, Any]) -> E:
         with self.uow:
-            session = self.uow.get_session()
             try:
                 entity: E = self.repo.entity_type(**data)
-                self._validate_creation(entity, session)
-                self.repo.add(session, entity)
-                return entity  # ✅ Return the actual entity instead of a dict
-            except IntegrityError:
-                raise ValueError("Duplicate entry, entity already exists")
+                self.repo.add(self.uow.connection, entity)
+                return entity
+
             except Exception as e:
                 raise ValueError(str(e))
 
-    def update(self, id: int, data: dict[str, Any]) -> E:
+    def update(self, id: int | str, data: dict[str, Any]) -> E:
         with self.uow:
-            session = self.uow.get_session()
-            self._get_entity(id, session)
-            if not self.repo.update(session, id, data):
-                raise ValueError("Failed to update entity")
-            return self._get_entity(id, session)
+            if not self.repo.update(self.uow.connection, id, data):
+                raise ValueError('Failed to update entity')
+            return self._get_entity(id, self.uow.connection)
 
-    def delete(self, id: int) -> dict[str, str]:
+    def delete(self, id: int | str) -> dict[str, str]:
         with self.uow:
-            session = self.uow.get_session()
-            self._get_entity(id, session)
-            if not self.repo.delete(id, session):
-                raise ValueError("Failed to delete entity")
-            return {"message": "Entity deleted successfully"}
+            if not self.repo.delete(id, self.uow.connection):
+                raise ValueError('Failed to delete entity')
+            return {'message': 'Entity deleted successfully'}
 
-    def _get_entity(self, id: int, session: Session) -> E:
-        entity = self.repo.get_by_id(id, session)
+    def _get_entity(self, id: int | str, connection: Connection) -> E:
+        entity = self.repo.get_by_id(id, connection)
         if not entity:
-            raise ValueError("Entity not found")
+            raise ValueError('Entity not found')
         return entity
 
-    def _validate_creation(self, entity: E, session: Session) -> None:
+    def _validate_creation(self, entity: E, connection: Connection) -> None:
         if not entity:
-            raise ValueError("Entity creation failed")
-        primary_key_column: str = self.repo.primary_key_column
-        entity_id = getattr(entity, primary_key_column, None)
-        if entity_id and self.repo.get_by_id(entity_id, session):
-            raise ValueError(f"Entity with this {primary_key_column} already exists")
+            raise ValueError('Entity creation failed')

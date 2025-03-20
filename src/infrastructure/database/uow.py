@@ -1,43 +1,48 @@
 from types import TracebackType
-from typing import Optional, Type
+from typing import Any, Type
 
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import Connection, Result, Transaction
 
 from src.infrastructure.database.db import engine
 
 
 class UnitOfWork:
     def __init__(self) -> None:
-        self.session = sessionmaker(bind=engine)()
+        self._connection: Connection | None = None
+        self._transaction: Transaction | None = None
 
     def __enter__(self) -> 'UnitOfWork':
-        self.start()
+        self._connection = engine.connect()
+        self._transaction = self._connection.begin()
         return self
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: Type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
+        if self._transaction is None:
+            raise RuntimeError('Transaction not initialized')
+
         if exc_type is None:
-            self.commit()
+            self._transaction.commit()
         else:
-            self.rollback()
+            self._transaction.rollback()
 
-    def start(self) -> None:
-        self.session.begin()
+    @property
+    def connection(self) -> Connection:
+        if self._connection is None:
+            raise RuntimeError('Connection not initialized')
+        return self._connection
 
-    def commit(self) -> None:
-        try:
-            self.session.commit()
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            raise e
+    def execute(self, statement: Any) -> Result[Any]:
+        return self.connection.execute(statement)
 
-    def rollback(self) -> None:
-        self.session.rollback()
+    def fetchone(self, statement: Any) -> Any:
+        result = self.execute(statement)
+        return result.fetchone()
 
-    def get_session(self) -> Session:
-        return self.session
+    def fetchall(self, statement: Any) -> Any:
+        result = self.execute(statement)
+        return result.fetchall()

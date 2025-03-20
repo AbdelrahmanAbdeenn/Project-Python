@@ -1,8 +1,0 @@
-{
-    "book_id":10,
-  "title": "The Catcher in the Rye",
-  "author": "J.D. inger",
-  "is_borrowed": false,
-  "borrowed_date": null,
-  "borrowed_by": null
-}
