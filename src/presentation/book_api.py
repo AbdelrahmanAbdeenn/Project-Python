@@ -50,7 +50,7 @@ def create_book(book_data: BookInput) -> Book:
 
 @router.patch('/book/{id}')
 def update_book(id: int, book_data: BookUpdateInput) -> Book:
-    data = book_data.dict(
+    data = book_data.model_dump(
         exclude_none=True
     )
     book = book_services.update(id, data)

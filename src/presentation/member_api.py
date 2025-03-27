@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from pydantic import BaseModel ,EmailStr
+from pydantic import BaseModel, EmailStr
 
 from src.application.member_services import MemberServices
 from src.domain.member_entity import Member
@@ -41,7 +41,7 @@ def create_member(member_data: MemberInput) -> Member:
 
 @router.patch('/member/{id}')
 def update_member(id: str, member_data: MemberUpdateInput) -> Member:
-    data = member_data.dict(
+    data = member_data.model_dump(
         exclude_none=True
     )
     member = member_services.update(id, data)
