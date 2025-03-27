@@ -15,7 +15,7 @@ class BookServices(BaseServices[Book]):
         super().__init__(BookRepo(), UnitOfWork())
         self.member_repo = MemberRepo()
 
-    def borrow_book(self, id: int, member_id: int) -> dict[str, str]:
+    def borrow_book(self, id: int, member_id: str) -> dict[str, str]:
         with self.uow:
             book = self._get_book_by_id(id, self.uow.connection)
             self._validate_book_availability(book)
@@ -53,7 +53,7 @@ class BookServices(BaseServices[Book]):
             raise ValueError('Entity not found')
         return book
 
-    def _get_member_by_id(self, member_id: int, connection: Connection) -> Any:
+    def _get_member_by_id(self, member_id: str, connection: Connection) -> Any:
         member = self.member_repo.get_by_id(member_id, connection)
         if not member:
             raise ValueError('Member not found')

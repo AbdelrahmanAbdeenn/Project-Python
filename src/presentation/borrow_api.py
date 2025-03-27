@@ -1,11 +1,11 @@
-from flask.views import MethodView
+from fastapi import APIRouter
 
 from src.application.book_services import BookServices
 
+router = APIRouter()
+bookServices = BookServices()
 
-class BorrowAPI(MethodView):
-    def __init__(self) -> None:
-        self.bookServices = BookServices()
 
-    def post(self, book_id: int, member_id: int) -> dict[str, str]:
-        return self.bookServices.borrow_book(book_id, member_id)
+@router.post('/borrow/{book_id}/{member_id}')
+def post(book_id: int, member_id: str) -> dict[str, str]:
+    return bookServices.borrow_book(book_id, member_id)

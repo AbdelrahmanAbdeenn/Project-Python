@@ -30,7 +30,9 @@ class BaseRepo(Generic[E]):
         entity_dict.pop('id', None)
         entity_dict.pop('books', None)
         statement = insert(self.table).values(entity_dict).returning(primary_column_key)
-        connection.execute(statement)
+        result = connection.execute(statement)
+        new_id = result.scalar_one()
+        setattr(entity, primary_column_key.name, new_id)
         return entity
 
     def update(self, connection: Connection, id: int | str, data: Any) -> bool:
