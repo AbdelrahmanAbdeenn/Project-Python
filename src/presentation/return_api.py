@@ -1,12 +1,12 @@
-from flask import Response, jsonify
-from flask.views import MethodView
+from fastapi import APIRouter
 
 from src.application.book_services import BookServices
+from src.domain.book_entity import Book
+
+router = APIRouter()
+book_services = BookServices()
 
 
-class ReturnAPI(MethodView):
-    def __init__(self) -> None:
-        self.bookServices = BookServices()
-
-    def post(self, id: int) -> Response:
-        return jsonify(self.bookServices.return_book(id))
+@router.post('/return/{book_id}')
+def return_book(id: int) -> Book:
+    return book_services.return_book(id)
