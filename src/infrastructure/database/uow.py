@@ -1,22 +1,24 @@
 from types import TracebackType
 from typing import Any, Type
 
-from sqlalchemy import Connection, Result, Transaction
+from sqlalchemy import Result
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncTransaction
 
-from src.infrastructure.database.db import engine
+from src.infrastructure.database.engine import engine
 
 
 class UnitOfWork:
     def __init__(self) -> None:
-        self._connection: Connection | None = None
-        self._transaction: Transaction | None = None
+        self.engine: AsyncEngine = engine
+        self._connection: AsyncConnection | None = None
+        self._transaction: AsyncTransaction | None = None
 
-    def __enter__(self) -> 'UnitOfWork':
-        self._connection = engine.connect()
-        self._transaction = self._connection.begin()
+    async def __aenter__(self) -> 'UnitOfWork':
+        self._connection = await engine.connect()
+        self._transaction = await self._connection.begin()
         return self
 
-    def __exit__(
+    async def __aexit__(
         self,
         exc_type: Type[BaseException] | None,
         exc_value: BaseException | None,
@@ -26,23 +28,23 @@ class UnitOfWork:
             raise RuntimeError('Transaction not initialized')
 
         if exc_type is None:
-            self._transaction.commit()
+            await self._transaction.commit()
         else:
-            self._transaction.rollback()
+            await self._transaction.rollback()
 
     @property
-    def connection(self) -> Connection:
+    def connection(self) -> AsyncConnection:
         if self._connection is None:
             raise RuntimeError('Connection not initialized')
         return self._connection
 
-    def execute(self, statement: Any) -> Result[Any]:
-        return self.connection.execute(statement)
+    async def execute(self, statement: Any) -> Result[Any]:
+        return await self.connection.execute(statement)
 
-    def fetchone(self, statement: Any) -> Any:
-        result = self.execute(statement)
+    async def fetchone(self, statement: Any) -> Any:
+        result = await self.execute(statement)
         return result.fetchone()
 
-    def fetchall(self, statement: Any) -> Any:
-        result = self.execute(statement)
+    async def fetchall(self, statement: Any) -> Any:
+        result = await self.execute(statement)
         return result.fetchall()

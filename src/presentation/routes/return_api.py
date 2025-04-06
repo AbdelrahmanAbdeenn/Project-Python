@@ -8,5 +8,5 @@ book_services = BookServices()
 
 
 @router.post('/return/{book_id}')
-def return_book(id: int) -> Book:
-    return book_services.return_book(id)
+async def return_book(id: int) -> Book:
+    return await book_services.return_book(id)

@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table
 from sqlalchemy.dialects.postgresql import UUID
 
-from src.infrastructure.database.db import engine, metadata
+from src.infrastructure.database.engine import metadata
 
 books = Table(
     'books',
@@ -22,4 +22,3 @@ members = Table(
     Column('name', String, nullable=False),
     Column('email', String, nullable=False, unique=True)
 )
-metadata.create_all(engine)

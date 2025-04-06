@@ -9,12 +9,12 @@ class MemberServices(BaseServices[Member]):
         uow = UnitOfWork()
         super().__init__(MemberRepo(), uow)
 
-    def get(self, id: int | None | str) -> list[Member] | Member:
-        with self.uow:
+    async def get(self, id: int | None | str) -> list[Member] | Member:
+        async with self.uow:
             if id is None:
-                return self.repo.get_all(self.uow.connection)
+                return await self.repo.get_all(self.uow.connection)
 
-            entity = self.repo.get_by_id(id, self.uow.connection)
+            entity = await self.repo.get_by_id(id, self.uow.connection)
             if not entity:
                 raise ValueError('Entity not found')
             return entity
