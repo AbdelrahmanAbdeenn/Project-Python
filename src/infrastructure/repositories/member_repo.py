@@ -1,6 +1,7 @@
 from typing import Any
 
-from sqlalchemy import Connection, select
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncConnection
 
 from src.domain.member_entity import Member
 from src.infrastructure.database.schema import books, members
@@ -11,23 +12,25 @@ class MemberRepo(BaseRepo[Member]):
     def __init__(self) -> None:
         super().__init__(Member, members)
 
-    def get_by_id(self, id: int | str, connection: Connection) -> Member | None:
+    async def get_by_id(self, id: int | str, connection: AsyncConnection) -> Member | None:
         statement = select(self.table).where(self.table.c.id == id)
-        result = connection.execute(statement).fetchone()
+        result = await connection.execute(statement)
+        row = result.fetchone()
 
-        if not result:
+        if not row:
             return None
 
-        entity = self._map_row_to_entity(result)
-        entity.books = self._get_borrowed_books(id, connection)
+        entity = self._map_row_to_entity(row)
+        entity.books = await self._get_borrowed_books(id, connection)
         return entity
 
-    def _get_borrowed_books(self, id: int | str, connection: Connection) -> list[dict[str, Any]]:
+    async def _get_borrowed_books(self, id: int | str, connection: AsyncConnection) -> list[dict[str, Any]]:
         statement = select(
             books.c.id, books.c.title, books.c.author, books.c.borrowed_date
         ).where(books.c.borrowed_by == id)
 
-        results = connection.execute(statement).fetchall()
+        results = await connection.execute(statement)
+        rows = results.fetchall()
 
         return [
             {
@@ -36,5 +39,5 @@ class MemberRepo(BaseRepo[Member]):
                 'author': row.author,
                 'borrowed_date': row.borrowed_date
             }
-            for row in results
+            for row in rows
         ]
